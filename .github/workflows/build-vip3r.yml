@@ -1,0 +1,63 @@
+name: Build VIP3R Lavender Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout VIP3R source
+        uses: actions/checkout@v4
+        with:
+          ref: 13.0
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc \
+            bison \
+            build-essential \
+            ccache \
+            curl \
+            flex \
+            git \
+            libelf-dev \
+            libncurses-dev \
+            libssl-dev \
+            perl \
+            python3 \
+            rsync \
+            unzip \
+            zip
+
+      - name: Build kernel
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Show output
+        if: always()
+        run: |
+          find . -type f -name "*.zip" -print
+          find . -type f -name "Image*" -print
+          if [ -f error.log ]; then
+            tail -n 200 error.log
+          fi
+
+      - name: Upload build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VIP3R-Lavender-Kernel
+          path: |
+            **/*.zip
+            **/Image.gz-dtb
+            **/error.log
+          if-no-files-found: warn
